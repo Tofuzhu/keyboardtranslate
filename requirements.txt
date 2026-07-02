@@ -1,0 +1,3 @@
+pyyaml
+requests
+pytest>=7.0
