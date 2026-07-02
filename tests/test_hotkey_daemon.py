@@ -1,6 +1,7 @@
 import pytest
 
 import hotkey_daemon
+from translator import TranslationError
 
 
 def test_capture_selection_copies_then_reads_clipboard(monkeypatch):
@@ -49,3 +50,45 @@ def test_apply_output_popup_mode(monkeypatch):
 def test_apply_output_unknown_mode_raises():
     with pytest.raises(ValueError):
         hotkey_daemon.apply_output("original", "translated", "bogus")
+
+
+def test_on_hotkey_no_selection_notifies_and_skips(monkeypatch):
+    monkeypatch.setattr(hotkey_daemon, "capture_selection", lambda: "   ")
+    notify_calls = []
+    monkeypatch.setattr(hotkey_daemon, "_notify_error", lambda msg: notify_calls.append(msg))
+    apply_calls = []
+    monkeypatch.setattr(hotkey_daemon, "apply_output", lambda *a, **k: apply_calls.append((a, k)))
+
+    hotkey_daemon.on_hotkey({"output_mode": "replace"})
+
+    assert len(notify_calls) == 1
+    assert apply_calls == []
+
+
+def test_on_hotkey_success_applies_output(monkeypatch):
+    monkeypatch.setattr(hotkey_daemon, "capture_selection", lambda: "hello")
+    monkeypatch.setattr(hotkey_daemon, "translate", lambda text, config=None: "你好")
+    apply_calls = []
+    monkeypatch.setattr(hotkey_daemon, "apply_output", lambda *a, **k: apply_calls.append(a))
+
+    hotkey_daemon.on_hotkey({"output_mode": "append"})
+
+    assert apply_calls == [("hello", "你好", "append")]
+
+
+def test_on_hotkey_translation_error_notifies(monkeypatch):
+    monkeypatch.setattr(hotkey_daemon, "capture_selection", lambda: "hello")
+
+    def raise_error(text, config=None):
+        raise TranslationError("no network")
+
+    monkeypatch.setattr(hotkey_daemon, "translate", raise_error)
+    notify_calls = []
+    monkeypatch.setattr(hotkey_daemon, "_notify_error", lambda msg: notify_calls.append(msg))
+    apply_calls = []
+    monkeypatch.setattr(hotkey_daemon, "apply_output", lambda *a, **k: apply_calls.append(a))
+
+    hotkey_daemon.on_hotkey({"output_mode": "replace"})
+
+    assert notify_calls == ["no network"]
+    assert apply_calls == []
