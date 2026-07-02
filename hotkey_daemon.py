@@ -4,6 +4,8 @@ import time
 import keyboard
 import pyperclip
 
+from translator import translate, TranslationError, load_config
+
 
 def capture_selection(paste_delay: float = 0.15) -> str:
     pyperclip.copy("")
@@ -33,9 +35,6 @@ def _notify_error(message: str) -> None:
     ctypes.windll.user32.MessageBoxW(0, message, "Translation Error", 0x10)
 
 
-from translator import translate, TranslationError, load_config
-
-
 def on_hotkey(config: dict) -> None:
     original = capture_selection()
     if not original.strip():
@@ -43,7 +42,7 @@ def on_hotkey(config: dict) -> None:
         return
     try:
         translation = translate(original, config=config)
-    except TranslationError as e:
+    except Exception as e:
         _notify_error(str(e))
         return
     apply_output(original, translation, config.get("output_mode", "replace"))

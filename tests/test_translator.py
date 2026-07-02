@@ -158,6 +158,18 @@ def test_call_llm_null_content_response(monkeypatch):
             call_llm([{"role": "user", "content": "hi"}], _fake_config())
 
 
+def test_call_llm_empty_content_raises(monkeypatch):
+    monkeypatch.setenv("TEST_API_KEY", "secret-key")
+    fake_response = MagicMock()
+    fake_response.raise_for_status.return_value = None
+    fake_response.json.return_value = {
+        "choices": [{"message": {"content": "   "}}]
+    }
+    with patch("translator.requests.post", return_value=fake_response):
+        with pytest.raises(TranslationError):
+            call_llm([{"role": "user", "content": "hi"}], _fake_config())
+
+
 def test_translate_uses_resolved_lang_and_calls_llm(monkeypatch):
     captured = {}
 
@@ -206,3 +218,6 @@ def test_cli_main_reports_translation_error(monkeypatch, capsys):
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "network down" in captured.err
+    assert "你好" in captured.out
+    assert "translate failed" in captured.out
+    assert "network down" in captured.out

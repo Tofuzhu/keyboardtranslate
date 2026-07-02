@@ -93,9 +93,14 @@ def call_llm(messages: list[dict], config: dict, timeout: float = 15.0) -> str:
     data = None
     try:
         data = response.json()
-        return data["choices"][0]["message"]["content"].strip()
+        content = data["choices"][0]["message"]["content"].strip()
     except (KeyError, IndexError, TypeError, AttributeError, ValueError) as e:
         raise TranslationError(f"Unexpected LLM response shape: {data}") from e
+
+    if not content:
+        raise TranslationError("LLM returned empty content")
+
+    return content
 
 
 def translate(text: str, to: str | None = None, config: dict | None = None) -> str:
@@ -118,6 +123,7 @@ def main() -> None:
         result = translate(args.text, to=args.to, config=config)
     except TranslationError as e:
         print(f"[translate error] {e}", file=sys.stderr)
+        print(f"{args.text} [translate failed: {e}]")
         sys.exit(1)
     print(result)
 

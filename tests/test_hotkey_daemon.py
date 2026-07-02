@@ -54,6 +54,11 @@ def test_apply_output_unknown_mode_raises():
 
 def test_on_hotkey_no_selection_notifies_and_skips(monkeypatch):
     monkeypatch.setattr(hotkey_daemon, "capture_selection", lambda: "   ")
+    monkeypatch.setattr(
+        hotkey_daemon,
+        "translate",
+        lambda *a, **k: pytest.fail("translate should not be called when there is no selection"),
+    )
     notify_calls = []
     monkeypatch.setattr(hotkey_daemon, "_notify_error", lambda msg: notify_calls.append(msg))
     apply_calls = []
@@ -91,4 +96,22 @@ def test_on_hotkey_translation_error_notifies(monkeypatch):
     hotkey_daemon.on_hotkey({"output_mode": "replace"})
 
     assert notify_calls == ["no network"]
+    assert apply_calls == []
+
+
+def test_on_hotkey_unexpected_error_notifies(monkeypatch):
+    monkeypatch.setattr(hotkey_daemon, "capture_selection", lambda: "hello")
+
+    def raise_error(text, config=None):
+        raise ValueError("bad default_pair")
+
+    monkeypatch.setattr(hotkey_daemon, "translate", raise_error)
+    notify_calls = []
+    monkeypatch.setattr(hotkey_daemon, "_notify_error", lambda msg: notify_calls.append(msg))
+    apply_calls = []
+    monkeypatch.setattr(hotkey_daemon, "apply_output", lambda *a, **k: apply_calls.append(a))
+
+    hotkey_daemon.on_hotkey({"output_mode": "replace"})
+
+    assert notify_calls == ["bad default_pair"]
     assert apply_calls == []
