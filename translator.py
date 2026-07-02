@@ -31,3 +31,17 @@ def resolve_target_lang(text: str, to: str | None, default_pair: list[str]) -> s
         )
 
     return other_code if is_chinese(text) else zh_code
+
+
+def build_messages(text: str, target_lang: str) -> list[dict]:
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are a professional translator. Translate the user's "
+                f"text into {target_lang}. Output ONLY the translation, "
+                "with no explanations, quotes, or additional commentary."
+            ),
+        },
+        {"role": "user", "content": text},
+    ]

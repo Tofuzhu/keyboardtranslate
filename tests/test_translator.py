@@ -1,6 +1,6 @@
 import pytest
 
-from translator import is_chinese, resolve_target_lang
+from translator import is_chinese, resolve_target_lang, build_messages
 
 
 def test_is_chinese_all_cjk():
@@ -38,3 +38,18 @@ def test_resolve_target_lang_pair_order_reversed():
 def test_resolve_target_lang_no_chinese_code_raises():
     with pytest.raises(ValueError):
         resolve_target_lang("hello", None, ["en", "es"])
+
+
+def test_build_messages_structure():
+    messages = build_messages("你好", "en")
+    assert messages == [
+        {
+            "role": "system",
+            "content": (
+                "You are a professional translator. Translate the user's "
+                "text into en. Output ONLY the translation, with no "
+                "explanations, quotes, or additional commentary."
+            ),
+        },
+        {"role": "user", "content": "你好"},
+    ]
