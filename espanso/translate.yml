@@ -1,0 +1,32 @@
+matches:
+  - regex: "[:：]cn (?P<text>.+)$"
+    replace: "{{output}}"
+    vars:
+      - name: output
+        type: shell
+        params:
+          cmd: 'python translator.py --text "{{text}}" --to cn'
+
+  - regex: "[:：]en (?P<text>.+)$"
+    replace: "{{output}}"
+    vars:
+      - name: output
+        type: shell
+        params:
+          cmd: 'python translator.py --text "{{text}}" --to en'
+
+  - regex: "[:：]es (?P<text>.+)$"
+    replace: "{{output}}"
+    vars:
+      - name: output
+        type: shell
+        params:
+          cmd: 'python translator.py --text "{{text}}" --to es'
+
+  - regex: "[:：]tr (?P<text>.+)$"
+    replace: "{{output}}"
+    vars:
+      - name: output
+        type: shell
+        params:
+          cmd: 'python translator.py --text "{{text}}"'
