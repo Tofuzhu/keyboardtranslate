@@ -131,3 +131,25 @@ def test_call_llm_malformed_response(monkeypatch):
     with patch("translator.requests.post", return_value=fake_response):
         with pytest.raises(TranslationError):
             call_llm([{"role": "user", "content": "hi"}], _fake_config())
+
+
+def test_call_llm_invalid_json_response(monkeypatch):
+    monkeypatch.setenv("TEST_API_KEY", "secret-key")
+    fake_response = MagicMock()
+    fake_response.raise_for_status.return_value = None
+    fake_response.json.side_effect = ValueError("Expecting value: line 1 column 1")
+    with patch("translator.requests.post", return_value=fake_response):
+        with pytest.raises(TranslationError):
+            call_llm([{"role": "user", "content": "hi"}], _fake_config())
+
+
+def test_call_llm_null_content_response(monkeypatch):
+    monkeypatch.setenv("TEST_API_KEY", "secret-key")
+    fake_response = MagicMock()
+    fake_response.raise_for_status.return_value = None
+    fake_response.json.return_value = {
+        "choices": [{"message": {"content": None}}]
+    }
+    with patch("translator.requests.post", return_value=fake_response):
+        with pytest.raises(TranslationError):
+            call_llm([{"role": "user", "content": "hi"}], _fake_config())

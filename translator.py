@@ -88,8 +88,9 @@ def call_llm(messages: list[dict], config: dict, timeout: float = 15.0) -> str:
     except requests.RequestException as e:
         raise TranslationError(f"LLM request failed: {e}") from e
 
-    data = response.json()
+    data = None
     try:
+        data = response.json()
         return data["choices"][0]["message"]["content"].strip()
-    except (KeyError, IndexError) as e:
+    except (KeyError, IndexError, TypeError, AttributeError, ValueError) as e:
         raise TranslationError(f"Unexpected LLM response shape: {data}") from e
