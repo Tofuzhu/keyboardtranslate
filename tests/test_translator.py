@@ -1,6 +1,19 @@
-import pytest
+import sys
 
-from translator import is_chinese, resolve_target_lang, build_messages
+import pytest
+import requests
+from unittest.mock import MagicMock, patch
+
+import translator
+from translator import (
+    TranslationError,
+    build_messages,
+    call_llm,
+    is_chinese,
+    load_config,
+    resolve_target_lang,
+    translate,
+)
 
 
 def test_is_chinese_all_cjk():
@@ -55,9 +68,6 @@ def test_build_messages_structure():
     ]
 
 
-from translator import load_config
-
-
 def test_load_config_reads_yaml(tmp_path):
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
@@ -74,13 +84,6 @@ def test_load_config_reads_yaml(tmp_path):
     assert config["model"] == "test-model"
     assert config["default_pair"] == ["zh", "en"]
     assert config["output_mode"] == "replace"
-
-
-from unittest.mock import patch, MagicMock
-
-import requests
-
-from translator import call_llm, TranslationError
 
 
 def _fake_config():
@@ -153,12 +156,6 @@ def test_call_llm_null_content_response(monkeypatch):
     with patch("translator.requests.post", return_value=fake_response):
         with pytest.raises(TranslationError):
             call_llm([{"role": "user", "content": "hi"}], _fake_config())
-
-
-import sys
-
-import translator
-from translator import translate
 
 
 def test_translate_uses_resolved_lang_and_calls_llm(monkeypatch):
