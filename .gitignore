@@ -1,0 +1,16 @@
+# Secrets
+llm.txt
+.env
+*.key
+
+# Local Claude Code settings (machine-specific, not shared)
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local config with secrets
+config.local.yaml
