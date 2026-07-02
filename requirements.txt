@@ -1,3 +1,5 @@
 pyyaml
 requests
+keyboard
+pyperclip
 pytest>=7.0
