@@ -53,3 +53,24 @@ def test_build_messages_structure():
         },
         {"role": "user", "content": "你好"},
     ]
+
+
+from translator import load_config
+
+
+def test_load_config_reads_yaml(tmp_path):
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        "provider: custom\n"
+        "base_url: https://example.invalid/v1/\n"
+        "model: test-model\n"
+        "api_key_env: TEST_API_KEY\n"
+        "default_pair: [zh, en]\n"
+        "output_mode: replace\n"
+        "hotkey: ctrl+alt+t\n",
+        encoding="utf-8",
+    )
+    config = load_config(str(config_file))
+    assert config["model"] == "test-model"
+    assert config["default_pair"] == ["zh", "en"]
+    assert config["output_mode"] == "replace"

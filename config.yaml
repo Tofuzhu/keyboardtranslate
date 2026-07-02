@@ -1,0 +1,7 @@
+provider: custom
+base_url: https://maas-apigateway.dt.zte.com.cn/model-cop/qwen3-235b-a22b-instrust-2507-coclaw/v1/
+model: Qwen3-235B-A22B
+api_key_env: KEYBOARDTRANSLATE_API_KEY
+default_pair: [zh, en]
+output_mode: replace
+hotkey: ctrl+alt+t

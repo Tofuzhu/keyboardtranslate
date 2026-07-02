@@ -1,5 +1,7 @@
 import re
 
+import yaml
+
 CJK_PATTERN = re.compile(r"[一-鿿]")
 ZH_CODES = {"zh", "cn", "zh-cn", "zh-hans"}
 
@@ -45,3 +47,11 @@ def build_messages(text: str, target_lang: str) -> list[dict]:
         },
         {"role": "user", "content": text},
     ]
+
+
+DEFAULT_CONFIG_PATH = "config.yaml"
+
+
+def load_config(path: str = DEFAULT_CONFIG_PATH) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
