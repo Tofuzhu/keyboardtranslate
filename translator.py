@@ -1,5 +1,7 @@
+import argparse
 import os
 import re
+import sys
 
 import requests
 import yaml
@@ -94,3 +96,31 @@ def call_llm(messages: list[dict], config: dict, timeout: float = 15.0) -> str:
         return data["choices"][0]["message"]["content"].strip()
     except (KeyError, IndexError, TypeError, AttributeError, ValueError) as e:
         raise TranslationError(f"Unexpected LLM response shape: {data}") from e
+
+
+def translate(text: str, to: str | None = None, config: dict | None = None) -> str:
+    if config is None:
+        config = load_config()
+    target_lang = resolve_target_lang(text, to, config["default_pair"])
+    messages = build_messages(text, target_lang)
+    return call_llm(messages, config)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Translate text via LLM")
+    parser.add_argument("--text", required=True)
+    parser.add_argument("--to", default=None)
+    parser.add_argument("--config", default=DEFAULT_CONFIG_PATH)
+    args = parser.parse_args()
+
+    config = load_config(args.config)
+    try:
+        result = translate(args.text, to=args.to, config=config)
+    except TranslationError as e:
+        print(f"[translate error] {e}", file=sys.stderr)
+        sys.exit(1)
+    print(result)
+
+
+if __name__ == "__main__":
+    main()
