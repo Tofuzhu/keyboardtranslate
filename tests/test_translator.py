@@ -74,3 +74,60 @@ def test_load_config_reads_yaml(tmp_path):
     assert config["model"] == "test-model"
     assert config["default_pair"] == ["zh", "en"]
     assert config["output_mode"] == "replace"
+
+
+from unittest.mock import patch, MagicMock
+
+import requests
+
+from translator import call_llm, TranslationError
+
+
+def _fake_config():
+    return {
+        "base_url": "https://example.invalid/v1/",
+        "model": "test-model",
+        "api_key_env": "TEST_API_KEY",
+    }
+
+
+def test_call_llm_success(monkeypatch):
+    monkeypatch.setenv("TEST_API_KEY", "secret-key")
+    fake_response = MagicMock()
+    fake_response.raise_for_status.return_value = None
+    fake_response.json.return_value = {
+        "choices": [{"message": {"content": " Hello "}}]
+    }
+    with patch("translator.requests.post", return_value=fake_response) as mock_post:
+        result = call_llm([{"role": "user", "content": "你好"}], _fake_config())
+    assert result == "Hello"
+    called_url = mock_post.call_args.args[0]
+    assert called_url == "https://example.invalid/v1/chat/completions"
+    called_headers = mock_post.call_args.kwargs["headers"]
+    assert called_headers["Authorization"] == "Bearer secret-key"
+
+
+def test_call_llm_missing_api_key_env(monkeypatch):
+    monkeypatch.delenv("TEST_API_KEY", raising=False)
+    with pytest.raises(TranslationError):
+        call_llm([{"role": "user", "content": "hi"}], _fake_config())
+
+
+def test_call_llm_request_exception(monkeypatch):
+    monkeypatch.setenv("TEST_API_KEY", "secret-key")
+    with patch(
+        "translator.requests.post",
+        side_effect=requests.RequestException("boom"),
+    ):
+        with pytest.raises(TranslationError):
+            call_llm([{"role": "user", "content": "hi"}], _fake_config())
+
+
+def test_call_llm_malformed_response(monkeypatch):
+    monkeypatch.setenv("TEST_API_KEY", "secret-key")
+    fake_response = MagicMock()
+    fake_response.raise_for_status.return_value = None
+    fake_response.json.return_value = {"unexpected": "shape"}
+    with patch("translator.requests.post", return_value=fake_response):
+        with pytest.raises(TranslationError):
+            call_llm([{"role": "user", "content": "hi"}], _fake_config())

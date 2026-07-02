@@ -1,5 +1,7 @@
+import os
 import re
 
+import requests
 import yaml
 
 CJK_PATTERN = re.compile(r"[一-鿿]")
@@ -55,3 +57,39 @@ DEFAULT_CONFIG_PATH = "config.yaml"
 def load_config(path: str = DEFAULT_CONFIG_PATH) -> dict:
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+class TranslationError(Exception):
+    pass
+
+
+def call_llm(messages: list[dict], config: dict, timeout: float = 15.0) -> str:
+    api_key = os.environ.get(config["api_key_env"])
+    if not api_key:
+        raise TranslationError(
+            f"Environment variable {config['api_key_env']} is not set"
+        )
+
+    url = config["base_url"].rstrip("/") + "/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    payload = {
+        "model": config["model"],
+        "messages": messages,
+        "max_tokens": 1024,
+        "temperature": 0.2,
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise TranslationError(f"LLM request failed: {e}") from e
+
+    data = response.json()
+    try:
+        return data["choices"][0]["message"]["content"].strip()
+    except (KeyError, IndexError) as e:
+        raise TranslationError(f"Unexpected LLM response shape: {data}") from e
